@@ -1,0 +1,5 @@
+*.txt
+.venv/
+.ipynb_checkpoints/
+catboost_info/
+my_study.db
