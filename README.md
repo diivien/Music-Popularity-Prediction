@@ -1,3 +1,15 @@
+---
+title: Music Popularity Prediction
+emoji: 🚀
+colorFrom: purple
+colorTo: blue
+sdk: gradio
+sdk_version: 3.28.0
+app_file: app.py
+pinned: false
+python_version: 3.10.6
+---
+
 # Music Popularity Prediction
 
 This repository contains a data science project that aims to predict the popularity of music using machine learning techniques.
