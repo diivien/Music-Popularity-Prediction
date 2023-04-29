@@ -14,6 +14,8 @@ python_version: 3.10.6
 
 This repository contains a data science project that aims to predict the popularity of music using machine learning techniques.
 
+Check out the demo [here](https://huggingface.co/spaces/diivien/Music-Popularity-Prediction)!
+
 ## Dataset
 
 This project uses the [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset) available on Kaggle. This dataset contains information about Spotify tracks over a range of 125 different genres. Each track has several audio features associated with it, such as popularity, explicitness, danceability, energy, key, mode, speechiness, acousticness, instrumentalness, liveness, valence, tempo, and time signature.
