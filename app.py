@@ -4,14 +4,15 @@ import joblib
 import os
 import spotipy
 import pylast
+import discogs_client
 from spotipy.oauth2 import SpotifyClientCredentials
 from Levenshtein import distance
 
 final_model = joblib.load('final_model.pkl')
-print(final_model)
 # Set up authentication with the Spotify API
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=os.environ['SPOT_API'], client_secret=os.environ['SPOT_SECRET']))
 network = pylast.LastFMNetwork(api_key=os.environ['LAST_API'], api_secret=os.environ['LAST_SECRET'])
+d = discogs_client.Client('app/0.1', user_token=os.environ['DIS_TOKEN'])
 genre_list = ['acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
        'anime', 'black-metal', 'bluegrass', 'blues', 'brazil',
        'breakbeat', 'british', 'cantopop', 'chicago-house', 'children',
@@ -39,19 +40,31 @@ genre_list = ['acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
 
 def get_track_genre(track_id,artist_name,track_name):
     genres = []
-    track = sp.track(track_id)
-    artist = sp.artist(track['artists'][0]['external_urls']['spotify'])
-    
-    album_id = track['album']['id']
-
+    track_spot = sp.track(track_id)
+    artist = sp.artist(track_spot['artists'][0]['external_urls']['spotify'])
+    album_id = track_spot['album']['id']
     album = sp.album(album_id)
     genres.extend(album['genres'])
     genres.extend(artist['genres'])
-    track = network.get_track(artist_name, track_name)
-    top_tags = track.get_top_tags(limit =5)
+
+
+    track_last = network.get_track(artist_name, track_name)
+    top_tags = track_last.get_top_tags(limit =5)
     tags_list = [tag.item.get_name() for tag in top_tags]
     genres.extend(tags_list)
+
+    # results = d.search(track_name, artist=artist_name, type='release')
+    # if results:
+    #     release = results[0]
+    #     if release.genres:
+    #         genres.extend(release.genres)
+    #     if release.styles:
+    #         genres.extend(release.styles)
+
+
+
     print(genres)
+
     return genres
 
 def find_most_similar_genre(my_genres, artist_genres):
@@ -115,7 +128,11 @@ theme = gr.themes.Monochrome(
     # text_size="text_lg",
     font=[gr.themes.GoogleFont('Neucha'), 'ui-sans-serif', 'system-ui', 'sans-serif'],
 )
-with gr.Blocks(theme=theme) as demo:
+with gr.Blocks(theme=theme,css = "@media (max-width: 600px) {" +
+        ".gradio-container { flex-direction: column;}" +
+        ".gradio-container h1 {font-size: 30px !important ;margin-left: 20px !important; line-height: 30px !important}" +
+        ".gradio-container h2 {font-size: 15px !important;margin-left: 20px !important;margin-top: 20px !important;}"+
+        ".gradio-container img{width : 100px; height : 100px}}") as demo:
     with gr.Row():
         image = gr.HTML("<div style='display: flex; align-items: center;'><img src='file=images/cat-jam.gif' alt='My gif' width='200' height='200'>" +
                         "<div><h1 style='font-size: 60px; line-height: 24px; margin-left: 50px;'>Music Popularity Prediction</h1>" +
@@ -156,7 +173,6 @@ with gr.Blocks(theme=theme) as demo:
     search_box.change(fn=update_dropdown, inputs=[search_box,track_ids_var], outputs=[song_dropdown,track_ids_var])
 
     def update_features(song,track_ids):
-        print(song)
         features = get_song_features(song, track_ids)
         return features
 
@@ -190,6 +206,7 @@ with gr.Blocks(theme=theme) as demo:
 
         df = pd.DataFrame(data)
         print(df)
+        print(final_model.predict(df))
         # Use your trained model to predict popularity based on the input features
         if(final_model.predict(df)[0] == 1):
             return ("<div style='display: flex; align-items: center;'><img src='file=images/pepe-jam.gif' alt='My gif 3' width='200' height='200'>" +
