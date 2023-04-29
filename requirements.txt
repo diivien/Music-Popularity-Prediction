@@ -6,3 +6,5 @@ imblearn
 category_encoders
 catboost
 scikit-learn
+pylast
+pandas < 2.0.0

@@ -3,6 +3,7 @@ import pandas as pd
 import joblib
 import os
 import spotipy
+import pylast
 from spotipy.oauth2 import SpotifyClientCredentials
 from Levenshtein import distance
 
@@ -10,7 +11,7 @@ final_model = joblib.load('final_model.pkl')
 print(final_model)
 # Set up authentication with the Spotify API
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=os.environ['SPOT_API'], client_secret=os.environ['SPOT_SECRET']))
-
+network = pylast.LastFMNetwork(api_key=os.environ['LAST_API'], api_secret=os.environ['LAST_SECRET'])
 genre_list = ['acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
        'anime', 'black-metal', 'bluegrass', 'blues', 'brazil',
        'breakbeat', 'british', 'cantopop', 'chicago-house', 'children',
@@ -32,11 +33,26 @@ genre_list = ['acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
        'spanish', 'study', 'swedish', 'synth-pop', 'tango', 'techno',
        'trance', 'trip-hop', 'turkish', 'world-music']
 
-def get_track_genre(track_id):
+
+
+
+
+def get_track_genre(track_id,artist_name,track_name):
+    genres = []
     track = sp.track(track_id)
     artist = sp.artist(track['artists'][0]['external_urls']['spotify'])
+    
+    album_id = track['album']['id']
 
-    return artist['genres']
+    album = sp.album(album_id)
+    genres.extend(album['genres'])
+    genres.extend(artist['genres'])
+    track = network.get_track(artist_name, track_name)
+    top_tags = track.get_top_tags(limit =5)
+    tags_list = [tag.item.get_name() for tag in top_tags]
+    genres.extend(tags_list)
+    print(genres)
+    return genres
 
 def find_most_similar_genre(my_genres, artist_genres):
     min_distance = float('inf')
@@ -49,8 +65,8 @@ def find_most_similar_genre(my_genres, artist_genres):
                 most_similar_genre = my_genre
     return most_similar_genre
 
-def match_genres_to_list(track_id):
-    track_genres=get_track_genre(track_id)
+def match_genres_to_list(track_id,artist_name,track_name):
+    track_genres=get_track_genre(track_id,artist_name,track_name)
     return find_most_similar_genre(genre_list,track_genres)
 
 def search_songs(query):
@@ -65,9 +81,10 @@ def get_song_features(song, track_ids):
     index = int(song.split(".")[0])
     track_id = track_ids[index]
     track_info = sp.track(track_id)
-
+    artist_name = track_info['artists'][0]['name']
+    track_name = track_info['name']
     features = sp.audio_features([track_id])[0]
-    genre = match_genres_to_list(track_id)
+    genre = match_genres_to_list(track_id,artist_name,track_name)
     key_map = {0: 'C', 1: 'C#', 2: 'D', 3: 'D#', 4: 'E', 5: 'F', 6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'A#', 11: 'B'}
     key = str(key_map[features['key']])
     mode_map = { 1: "Major", 0: "Minor"}
@@ -172,7 +189,7 @@ with gr.Blocks(theme=theme) as demo:
         }
 
         df = pd.DataFrame(data)
-
+        print(df)
         # Use your trained model to predict popularity based on the input features
         if(final_model.predict(df)[0] == 1):
             return ("<div style='display: flex; align-items: center;'><img src='file=images/pepe-jam.gif' alt='My gif 3' width='200' height='200'>" +
