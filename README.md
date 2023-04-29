@@ -57,7 +57,7 @@ To get started with the model building process, you can follow the instructions 
 I am currently working on several improvements and extensions to this project. Some include:
 
 - Testing a neural network classifier to see if it can improve the accuracy of our predictions
-- Deploying an app on Gradle to make it easier for users to interact with our models and make predictions
+- Deploying an app on Gradio to make it easier for users to interact with our models and make predictions
 
 
 ## Citations
