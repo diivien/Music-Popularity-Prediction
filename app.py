@@ -6,7 +6,8 @@ import spotipy
 import pylast
 import discogs_client
 from spotipy.oauth2 import SpotifyClientCredentials
-from Levenshtein import distance
+from queue import PriorityQueue
+from fuzzywuzzy import fuzz
 
 final_model = joblib.load('final_model.pkl')
 # Set up authentication with the Spotify API
@@ -39,48 +40,60 @@ genre_list = ['acoustic', 'afrobeat', 'alt-rock', 'alternative', 'ambient',
 
 
 def get_track_genre(track_id,artist_name,track_name):
-    genres = []
+    genres = {}
     track_spot = sp.track(track_id)
     artist = sp.artist(track_spot['artists'][0]['external_urls']['spotify'])
     album_id = track_spot['album']['id']
     album = sp.album(album_id)
-    genres.extend(album['genres'])
-    genres.extend(artist['genres'])
+    genres.update({genre: 100 for genre in album['genres']})
+    genres.update({genre: 100 for genre in artist['genres']})
 
+    try:
+        if network.get_track(artist_name, track_name):
+            track_last = network.get_track(artist_name, track_name)
+            top_tags = track_last.get_top_tags(limit=5)
+            tags_list = {tag.item.get_name(): int(tag.weight) for tag in top_tags}
+            genres.update(tags_list)
+    except pylast.WSError as e:
+        if str(e) == "Track not found":
+            # Handle the error here
+            pass
 
-    track_last = network.get_track(artist_name, track_name)
-    top_tags = track_last.get_top_tags(limit =5)
-    tags_list = [tag.item.get_name() for tag in top_tags]
-    genres.extend(tags_list)
-
-    # results = d.search(track_name, artist=artist_name, type='release')
-    # if results:
-    #     release = results[0]
-    #     if release.genres:
-    #         genres.extend(release.genres)
-    #     if release.styles:
-    #         genres.extend(release.styles)
-
+    results = d.search(track_name, artist=artist_name, type='release')
+    if results:
+        release = results[0]
+        if release.genres:
+            genres.update({genre: 50 for genre in release.genres})
+        if release.styles:
+            genres.update({genre: 50 for genre in release.styles})
 
 
     print(genres)
-
     return genres
 
-def find_most_similar_genre(my_genres, artist_genres):
-    min_distance = float('inf')
-    most_similar_genre = None
-    for my_genre in my_genres:
-        for artist_genre in artist_genres:
-            d = distance(my_genre, artist_genre)
-            if d < min_distance:
-                min_distance = d
-                most_similar_genre = my_genre
-    return most_similar_genre
+
+def similar(genre1, genre2):
+    score = fuzz.token_set_ratio(genre1, genre2)
+    return genre1 if score >85 else None
+
+def find_genre(genres, scraped_genres):
+    pq = PriorityQueue()
+    for genre, weight in scraped_genres.items():
+        pq.put((-weight, genre))
+    while not pq.empty():
+        weight, genre = pq.get()
+        if genre in genres:
+            return genre
+        else:
+            for g in genres:
+                if similar(g, genre):
+                    return g
+    return None
+
 
 def match_genres_to_list(track_id,artist_name,track_name):
     track_genres=get_track_genre(track_id,artist_name,track_name)
-    return find_most_similar_genre(genre_list,track_genres)
+    return find_genre(genre_list,track_genres)
 
 def search_songs(query):
     results = sp.search(q=query, type="track")

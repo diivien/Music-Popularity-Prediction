@@ -1,5 +1,4 @@
 spotipy
-Levenshtein
 joblib
 gradio
 imblearn
@@ -9,3 +8,4 @@ scikit-learn
 pylast
 pandas < 2.0.0
 python3-discogs-client
+fuzzywuzzy
