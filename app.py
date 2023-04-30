@@ -229,6 +229,12 @@ with gr.Blocks(theme=theme,css = "@media (max-width: 600px) {" +
                         "<div><h1 style='font-size: 30px; line-height: 24px; margin-left: 50px;'>Not a bop....</h1></div>")
 
     song_dropdown.change(fn=update_features, inputs=[song_dropdown,track_ids_var], outputs=inputs)
-    predict_button.click(fn=predict_popularity, inputs=inputs, outputs=popularity_box, scroll_to_output=True,_js="const element = document.getElementById('output');element.scroll")
+    predict_button.click(fn=predict_popularity, inputs=inputs, outputs=popularity_box, scroll_to_output=True,
+                         _js="const element = document.querySelector('output');"+
+                             "const rect = element.getBoundingClientRect();"+
+                             "const options = {left: rect.left, top: rect.top, behavior: 'smooth'}"+
+                             "parentIFrame' in window ?"
+                             "window.parentIFrame.scrollTo(options):"+
+                             "window.scrollTo(options)")
 
     demo.launch()
