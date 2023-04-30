@@ -177,7 +177,7 @@ with gr.Blocks(theme=theme,css = "@media (max-width: 600px) {" +
 
         with gr.Column():
             popularity_box = gr.HTML("<div style='display: flex; align-items: center;'><img src='file=images/pepe-waiting.gif' alt='My gif 2' width='200' height='200'>" +
-                        "<div><h1 style='font-size: 30px; line-height: 24px; margin-left: 50px;'>Waiting for your song...</h1></div>")
+                        "<div><h1 style='font-size: 30px; line-height: 24px; margin-left: 50px;'>Waiting for your song...</h1></div>",elem_id="output")
     track_ids_var = gr.State()
     def update_dropdown(query,track_ids):
         songs, track_ids = search_songs(query)
@@ -229,6 +229,6 @@ with gr.Blocks(theme=theme,css = "@media (max-width: 600px) {" +
                         "<div><h1 style='font-size: 30px; line-height: 24px; margin-left: 50px;'>Not a bop....</h1></div>")
 
     song_dropdown.change(fn=update_features, inputs=[song_dropdown,track_ids_var], outputs=inputs)
-    predict_button.click(fn=predict_popularity, inputs=inputs, outputs=popularity_box, scroll_to_output=True)
+    predict_button.click(fn=predict_popularity, inputs=inputs, outputs=popularity_box, scroll_to_output=True,_js="const element = document.getElementById('output');element.scroll")
 
     demo.launch()
