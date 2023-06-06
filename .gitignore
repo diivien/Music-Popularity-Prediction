@@ -4,3 +4,4 @@ catboost_info/
 my_study.db
 flagged/
 .cache
+*.pdf
